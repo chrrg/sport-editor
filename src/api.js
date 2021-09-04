@@ -3,19 +3,21 @@ import dayjs from "dayjs";
 import fs from "fs/promises";
 import { toUrlEncode } from "./common.js";
 import * as log from "./log.js";
+import Configstore from "configstore";
+
 
 // 公共头
 const COMMON_HEADERS = {
   "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-  "User-Agent": "MiFit/4.6.0 (iPhone; iOS 14.0.1; Scale/2.00)",
+  "User-Agent": "MiFit/4.6.0 (iPhone; iOS 14.0.1; Scale/2.00)"
 };
 
 // 初始化请求工具
 const axios = Axios.create({
   timeout: 30000,
   headers: {
-    ...COMMON_HEADERS,
-  },
+    ...COMMON_HEADERS
+  }
 });
 
 export async function loginByPassword(username, password) {
@@ -26,7 +28,7 @@ export async function loginByPassword(username, password) {
     client_id: "HuaMi",
     password: password,
     redirect_uri: redirect_uri.toString(),
-    token: "access",
+    token: "access"
   });
 
   try {
@@ -35,7 +37,6 @@ export async function loginByPassword(username, password) {
       data
     );
     log.info("登录成功, 开始获取登录授权码");
-
     // 获取Code
     const path = new URL(res.request.path, redirect_uri);
     const params = path.searchParams;
@@ -44,11 +45,11 @@ export async function loginByPassword(username, password) {
       log.info(`获取登录授权码成功 code: ${code}`);
       return code;
     }
-    throw new Error("获取登录授权码失败");
   } catch (e) {
     log.error("登录失败， 请检查账号密码");
     throw e;
   }
+  throw new Error("获取登录授权码失败");
 }
 
 /**
@@ -77,7 +78,7 @@ export async function loginByPassword(username, password) {
  *   domain: { 'id-dns': 'https://account-cn2.huami.com' }
  * }
  *
- * @param {code} code
+ * @param {string} code
  * @returns
  */
 export async function getAccessToken(code) {
@@ -89,12 +90,11 @@ export async function getAccessToken(code) {
     device_id: "2C8B4939-0CCD-4E94-8CBA-CB8EA6E613A1",
     device_model: "phone",
     grant_type: "access_token",
-    third_name: "huami_phone",
+    third_name: "huami_phone"
   });
 
   try {
     const res = await axios.post("https://account.huami.com/v2/client/login", data);
-
     const token_info = res.data.token_info;
     log.info(`获取AccessToken成功 token: ${token_info.login_token}`);
     return token_info;
@@ -104,29 +104,38 @@ export async function getAccessToken(code) {
   }
 }
 
-export async function pushBandData(step, user_id, app_token) {
+export async function pushBandData(userName) {
+  const store = new Configstore("sport-editor."+userName, {});
+  const date = dayjs().format("YYYY-MM-DD");
   const data = toUrlEncode({
-    userid: user_id,
-    last_sync_data_time: 1597306380,
+    userid: store.get('user_id'),
+    last_sync_data_time: (new Date().getTime() / 1000 - 3600) | 0,//2020-08-13 16:13:00
     device_type: 0,
     last_deviceid: "DA932FFFFE8816E7",
-    data_json: await buildDataJson(step),
+    data_json: await buildDataJson(store.get(date))
   });
 
   try {
-    const res = await axios.post(
+    await axios.post(
       `https://api-mifit-cn.huami.com/v1/data/band_data.json?&t=${Date.now()}`,
       data,
       {
         headers: {
-          apptoken: app_token,
-        },
+          apptoken: store.get('app_token'),
+        }
       }
     );
-
-    log.info(`上传步数成功 step：${step}`);
+    store.set("error", 0);
+    log.info(`上传步数成功 step：${store.get(date)}`);
   } catch (e) {
-    log.error("上传步数失败");
+    store.set("user_id", "");
+    store.set("app_token", "");
+    store.set("error", (store.get("error") | 0) + 1);
+    if (e.response.status === 401) {
+      log.error("登录已过期！需要重新登录！");
+    } else {
+      log.error("上传步数失败，错误次数：" + (store.get("error") | 0));
+    }
     throw e;
   }
 }

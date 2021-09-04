@@ -1,30 +1,25 @@
 import { loginByPassword, getAccessToken, pushBandData } from "./api.js";
 import { isEmpty } from "./common.js";
 import * as log from "./log.js";
+import Configstore from "configstore";
 
-export async function run(config) {
-  if (isEmpty(config.app_token) || isEmpty(config.user_id)) {
-    log.warn("未获取到APP_TOKEN或USER_ID 将使用账号密码方式运行");
-    const code = await loginByPassword(config.username, config.password);
-    const { app_token, user_id } = await getAccessToken(code);
 
-    config.app_token = app_token;
-    config.user_id = user_id;
+export async function run(username,password) {
+  const store = new Configstore("sport-editor."+username, {});
+
+  let app_token = store.get("app_token");
+  let user_id = store.get("user_id");
+  if ((store.get("error") || 0) > 10) {
+    log.error("上传步数失败，错误次数已达上限！程序异常！");
+    // throw e;
   }
 
-  const step = getRamdomStep(config.step_size);
-  await pushBandData(step, config.user_id, config.app_token);
-}
-
-function getRamdomStep(step_size = DEFAULT_STEP_SIZE) {
-  if (!step_size.includes("-")) throw new Error("步数范围格式异常");
-
-  const temp = step_size.split("-");
-  if (temp.length !== 2) return getRamdomStep();
-
-  const min = new Number(temp[0]);
-  const max = new Number(temp[1]);
-  const step = parseInt(min + Math.random() * (max - min));
-  log.info(`在 [${min} 至 ${max}] 范围内随机步数 step: ${step}`);
-  return step;
+  if (isEmpty(app_token) || isEmpty(user_id)) {
+    log.warn("未获取到APP_TOKEN或USER_ID 将使用账号密码方式运行");
+    const code = await loginByPassword(username, password);
+    const res = await getAccessToken(code);
+    store.set("app_token", res.app_token);
+    store.set("user_id", res.user_id);
+  }
+  await pushBandData(username);
 }

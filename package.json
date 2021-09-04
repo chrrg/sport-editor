@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
-    "dayjs": "^1.10.4"
+    "configstore": "^6.0.0",
+    "dayjs": "^1.10.4",
+    "log4js": "^6.3.0"
   }
 }
