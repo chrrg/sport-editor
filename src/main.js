@@ -11,7 +11,7 @@ export async function run(username,password) {
   let user_id = store.get("user_id");
   if ((store.get("error") || 0) > 10) {
     log.error("上传步数失败，错误次数已达上限！程序异常！");
-    // throw e;
+    throw e;
   }
 
   if (isEmpty(app_token) || isEmpty(user_id)) {
