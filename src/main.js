@@ -4,8 +4,8 @@ import * as log from "./log.js";
 import Configstore from "configstore";
 
 
-export async function run(username,password) {
-  const store = new Configstore("sport-editor."+username, {});
+export async function run(username, password) {
+  const store = new Configstore("sport-editor." + username, {});
 
   let app_token = store.get("app_token");
   let user_id = store.get("user_id");
@@ -21,5 +21,10 @@ export async function run(username,password) {
     store.set("app_token", res.app_token);
     store.set("user_id", res.user_id);
   }
-  await pushBandData(username);
+  const status = await pushBandData(username);
+  if (status === "noLogin") {
+    //登录失败
+    log.warn("尝试一次重试登录！");
+    await pushBandData(username);
+  }
 }
