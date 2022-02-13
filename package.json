@@ -7,7 +7,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js 17674740051 877562884admin"
   },
   "dependencies": {
     "axios": "^0.21.1",

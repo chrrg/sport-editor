@@ -133,6 +133,7 @@ export async function pushBandData(userName) {
     store.set("error", (store.get("error") | 0) + 1);
     if (e.response.status === 401) {
       log.error("登录已过期！需要重新登录！");
+      return "noLogin"
     } else {
       log.error("上传步数失败，错误次数：" + (store.get("error") | 0));
     }
