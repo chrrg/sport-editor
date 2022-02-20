@@ -53,12 +53,17 @@ import dayjs from "dayjs";
   const store = new Configstore("sport-editor." + config.username, {});
   const date = dayjs().format("YYYY-MM-DD");
   const prevStep = store.get(date) | 0;
-  if (hour >= 11) {//如果11点执行 需要满足6666以上
-    if (prevStep + addStep < 6666) {
-      addStep += 6666 - (prevStep + addStep) + Math.random() * 500;//11点运行之后一定最少有6666步
-    }
-  }
-  if (prevStep >= 6666) {//如果步数已经够了 不需要那么多
+  //随机生成今天最大的步数
+  let maxStep = 6666;
+  maxStep = maxStep + 3000 * getRandomForDay();
+  maxStep = maxStep | 0;
+
+  // if (hour >= 11) {//如果11点执行 需要满足6666以上
+  //   if (prevStep + addStep < 6666) {
+  //     addStep += 6666 - (prevStep + addStep) + Math.random() * 500;//11点运行之后一定最少有6666步
+  //   }
+  // }
+  if (prevStep >= maxStep) {//如果步数已经够了 不需要那么多
     addStep = (Math.random() * 100) | 0;
   }
   let step = prevStep + addStep;
@@ -69,7 +74,13 @@ import dayjs from "dayjs";
     return;
   }
   store.set(date, step);
-  log.info("程序启动！本次步数设置为：" + step);
+  log.info("程序启动！本次步数设置为：" + step + ",今天随机最大：" + maxStep);
 
   await run(config.username, config.password);
 })();
+
+function getRandomForDay() {
+  let seed = (new Date().getTime() / 1000 / 86400) | 0;
+  seed = (seed * 9301 + 49297) % 233280;
+  return seed / 233280.0;
+}
