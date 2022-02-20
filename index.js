@@ -74,7 +74,7 @@ import dayjs from "dayjs";
     return;
   }
   store.set(date, step);
-  log.info("程序启动！本次步数设置为：" + step + ",今天随机最大：" + maxStep);
+  log.info("程序启动！本次增加" + addStep + "步，总数为：" + step + ",今天随机最大：" + maxStep);
 
   await run(config.username, config.password);
 })();
